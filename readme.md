@@ -1004,6 +1004,461 @@ FastField is an optimezed version of the Field component which internally implem
 
 so if you feel that a particular field is independent of all other fields in your form then you can use the FastField component
 
+<div className='form-control'>
+  <label htmlFor='address'>Address</label>
+  <FastField name='address'>
+    {props => {
+      const {field, form, meta} = props
+      return (
+        <div>
+          <input type='text' id='address' {...field} />
+          {meta.touched && meta.error ? <div>{meta.error}</div> : null}
+        </div> 
+      )
+    }}
+  </FastField>
+</div>
+
 ## when does validation run
 
-what we know so far is that once the validation rules are run formik auto populates the formik.errors object with the error messages
+what we know so far is that once the validation rules are run formik auto populates the formik.errors object with the error messages. For this section we can use that to monitor when exactly validation runs.
+
+we need to pick a field that implements the render porps pattern which will give us access to formik.errors object.
+
+We have two choices: we could use the address field or the phone numbers field. Since the address field is a FastField component, it's behaviour is not exactly what we want, so let's go with the phone numbers.
+
+In the phone numbers FieldArray component, we can see that we already get access to the form object all we have to do now is add log statement
+
+console.log('Form errors, form.errors)
+
+let's inspect the page, on the page load we can see that errors object is empty, so the form validation is not yet run
+
+now let's understand the different scenarios in which this errors object gets populated.
+
+The first scenario is when a change event has occured. So in the channel field if we start typing in something, you can see that the errors object is now populated.
+
+so first scenario, formik runs validation after any change event in the form.
+
+let's reload the form and take a look at the second scenario. On page load again the error object is empty, now if we click inside the channel field and then click outside you can see that again the errors object is populated.
+
+second scenario, formik runs validation after any blur event in the form,
+i.e when you blur out from a form field.
+
+let's reload the page and take a look at the third scenario. on page load again errors object is empty, now without interacting with any of the form fields we're going to click on the submit button, once again we can see that the errors object is populated.
+
+so whenever form submission is attempted, formik runs the validation
+
+And what is great here , if the validation doesnot pass for all the fields, the onSubmit handler never gets executed. so we dont have to worry about manually handling form submission only if all the validation rules pass, formik will takecare of that for you.
+
+so, on change, on blur and attempt to submit the form. These are the three cases in which validation will be run.
+
+Now based on the complexity of your form or even just to meet your application requirements, sometimes we might not want formik to automatically run the validation function for us. so what formik does is provide two props to control the first two scenarios.
+
+So on the Formik component, we can specify a prop called validateOnChange and set it to false. this will instruct formik to not run the validation function on a change event.
+
+Now similar to validateOnChange, on the formik component we can pass in another prop called validateOnBlur and set it to false. validation will never be run even on the blur event.
+
+<Formik
+initialValues={initialValues}
+validationSchema={validationSchema}
+onSubmit={onSubmit}
+validateOnChange={false}
+validateOnBlur={false}
+
+>
+
+## Field level validation
+
+If you can recollect from the old youtube form we had, there are two ways to specify the validation rules for our entire form
+
+1. We pass in a custom validation function using the validate prop
+2. we specify the yup object schema using the validation schema prop
+
+What is important to note though is that both these props are available on the top level Formik component
+
+Formik also allows us to specify a validation function at a field level
+
+let's take a look at an example
+
+right now we have a validation rules on the first three fields: name, email and channel
+
+similarly let's try to add a required field validation against the fourth field which is comments
+
+<div className='form-control'>
+  <label htmlFor='comments'>Comments</label>
+  <Field as='textarea' id='comments' name='comments'/>
+</div>
+
+Now if we were to specify this rule using validation schema, we already know how to do that.
+
+As it turns out specifying validation rule at a field level is very similar to the custom validate function we had a look earlier in the old youtube form. Field level validation is almost the same but even simpler
+
+first, we need to define a validate function that works only for the comments field. This method will automatically receive the value of the comments field.
+
+within the function body we declare a variable called error. We then check if the value is empty and assign the message required and finally we return that error.
+
+const validateComments = value => {
+let error
+if(!value){
+error = 'Required'
+}
+return error
+}
+
+Now on the Field component for comments, we can pass in the validate prop and assign this validate function.
+
+<div className='form-control'>
+  <label htmlFor='comments'>Comments</label>
+  <Field
+   as='textarea'
+   id='comments'
+   name='comments' 
+   validate={validateComments}
+  />
+  <ErrorMessage name='comments' component={TextError}>
+
+//this component basically adds red color to the error message
+
+</div>
+
+## Manually triggering validation
+
+we are going to learn how to manually trigger both form and field level validations with formik
+
+To be able to trigger validations manually formik provides us with two helper methods.
+
+In order to access these methods though we need to use the render props pattern on the entire form itself.
+
+If you take a look at the address form control you can see that we have a function as children. This function automatically receives some props and then returns some jsx.
+
+similarly if we take a look at the field array component for phone numbers we again have the same pattern. function as children, function receives props and returns jsx.
+
+Now though we are going to have function as children on the top level formik component.
+
+The function will receive some props which we are going to call as formik and then return the entire Form component.
+
+<Formik
+ initialValues={initialValues}
+ validationSchema={validationSchema}
+ onSubmit={onSubmit}>
+
+{formik => {
+return (
+
+  <Form>...</Form>
+  )
+  }}
+</Formik>
+
+Now that was pretty straightforward but what that did is give us access to this formik props which again lets us control everything that has to do with our form.
+
+lets log this to the console and see what exactly this Formik props is providing.
+
+<Formik
+ initialValues={initialValues}
+ validationSchema={validationSchema}
+ onSubmit={onSubmit}>
+
+{formik => {
+console.log('Formik props', formik)
+return (
+
+    <Form>...</Form>
+    )
+
+}}
+</Formik>
+
+Formik props
+{values: {...}, errors: {...}, touched: {...}, status: undefined, isSubmitting:false...}
+
+if we expand the object we can see the different properties and methods. we have errors, touched, handleChange, handleBlur, handleSubmit and so on...
+
+Now this object seems very familiar because we have looked at this very object quite a few times already, the first time was when we used the useFormik hook. The formik object that was returned is nothing but this prop we have right now and even more recently in the render props pattern for Field and FieldArray, you can see that we get a prop called form, this again is the same as formik props that we are seeing right now.
+
+It's a good question to ask why do we have the same props at the form level and the field level. Use the field level object when you have to deal with that inidividual field.
+But if there is something that has to be done for the entire form use the form level formik props.
+
+For this section we are going to use this top level formik props to show you that you can control both form and field level functionality.
+
+Now before the submit button we're going to add two more buttons
+
+<button type='button'>Validate comments</button>
+<button type='button'>Validate all</button>
+<button type='submit'>Submit</button>
+
+The first button is to validate the comments field since we have returned a field level validate function for the comments field.
+The second button is to validate the entire form
+
+Now let's head back to the console and see what does formik provide to implement these button click handlers
+
+If we expand the formik props object we can see that we have two methods:- validateField, validateForm
+
+<button type='button' onClick={() => formik.validateField('comments')}>Validate comments</button>
+<button type='button' onClick={ () => formik.validateForm()}>Validate all</button>
+
+On page load we can see that we don't have any errors being displayed, now let's click on the validate comments button, we can see that we still don't have any error messages being displayed seems strange let's see if the other button works. When we click on validate all button and still we don't see any error messages. let's reload the page and try to understand what is happening. if we click on validate comments we have the formik object logged in the console again. If we take a look at the errors object we have the comments property but if we take a look at the touched object it is empty and if you remember our condition to show an error message is that the field has to be touched in addition to containing an error message. This is the reason we dont see any error message displayed in the UI. The same case holds for validate all as well. We click on the button, we get a new log statement, inspect errors and we have all the errors, inspect touched though and it is empty, which is again the reason why none of the error messages are being displayed.
+
+We can fix this though, if you take a look at the formik object again we have two more helper methods:- setFieldTouched and setTouched.
+
+As the name indicates, setFieldTouched will add that particular field to the touched object and setTouched will add multiple fields to the touched object.
+
+<button type='button' onClick={() => formik.setFieldTouched('comments')}>visit comments</button>
+<button type='button' onClick={ () => formik.setTouched({
+name: true,
+email: true,
+channel: true,
+comments: true
+})}>visit fields</button>
+
+ofcourse if you set it to false it will appear that way in the touched object.
+
+## Disabling submit
+
+The scenarios under which you want the submit button to be disabled is completely dependent on your own requirements and how you want the user experience to be. We will go through two scenarios but you are free to disable the submit button based on your app requirements.
+
+The two scenarios are:
+
+1. Disabling the submit button based on the Validity of the form state
+2. Disabling the submit button when Form submission is in progress
+
+Now the first scenario we want the submit button to be disabled if the form state is invalid. To implement this functionality we need to understand few properties in the formik props object, remember we implemented the render props pattern for the formik component which gives us access to this formik props. if you take a look at this in the browser console, you can see that it is an object helps us manage our entire form.
+
+In this list of properties our first focal point is the isValid property, let's understand how it works.
+
+Now isValid is a read-only property that is set to true if the errors object is empty. so on page load you can see that the errors object is empty so isValid is set to true.
+now we can simply click inside the channel field and click outside, this will populate the errors object and since the errors object is not empty anymore, isValid is set to false.
+
+So isValid is a property that lets us know if the form has no errors at any given time. WE can use this property to disable the submit button.
+
+<button type='submit' disabled={!formik.isValid}>Submit</button>
+
+so if the form is not valid disable the submit button.
+
+On page load you can see that the submit button is not disabled now this is a bit strange since we know that email, channel and comments are all required fields but they are currently empty. However the submit button still being enabled is not a bug, it is simply following our instructions. We have told the button to be disabled only if isValid is false which in turn is telling disable the submit button if the errors object is not empty, on page load the errors object is in fact empty. So obviously, isValid is true, a form state is valid and the submit button is enabled.
+
+If you click on the submit button it now populates the errors object which in turn sets isValid to false and now our submit button is disabled.
+
+If we resolve all the errors, the submit button is enabled again and we can submit the form.
+
+However there would be some client who wants the submit button to be disabled until all validations have been met right from the get-go. Now there are two ways to solve this.
+
+1. to add validateOnMount prop on the Formik component and set it to true
+
+<Formik
+initialValues={initialValues}
+validationSchema={validationSchema}
+onSubmit={onSubmit}
+validateOnMount
+
+>
+
+On page load, as soon as the form mounts on the DOM formik will run the validations against each field and populate the errors object, if the errors object is not empty isValid is false. If isValid is false, the form state is invalid and hence the submit button is disabled.
+
+Although this option seems to work fine there is a drawback. If you have a form with 20 or 30 fields with complex validations, it really doesn't make sense to run all the validation rules even before the user has typed in a single letter, so this first option of using validateOnMount is perhaps suitable for a form with very few fields with simple validations.
+
+2. To use another property present in the formik props object. if we go back to the console, inspect the formik props object, you can see that there is a property called dirty and this basically is a boolean value which indicates if at least one of the form fields value has changed since it was initialized.
+
+On page load, dirty is set to false so none of the values have changed. Now we click on channel and then blur out. if you take a look at the updated formik props, the errors object is populated but dirty is still set to false. If you however change any of the field values to something different from what the initial value is, it gets set to true. so if we reload the page again and remove a letter from 'vishwas' you can see that dirty is set to true.
+
+Let's see how we can use this property in conjunction with the isValid property to disable the submit button
+
+<button type='submit' disabled={!(formik.dirty && formik.isValid)}>Submit</button>
+
+We are telling formik to disable the submit button if the user has changed any field value and the form is not in a valid state
+
+Although this seems to be a much better way there is again a drawback.
+
+So what's to be noted here is that this option of using dirty to disable the submit button is based on the assumption that on page load that is without the user changing any of the form field values, the form state is always invalid. If you know for a fact the user will interact with your form and enter values which will never be exactly the same values as the initialValues object, then you can stick to this option. A lot of the times a user would always interact with the form without trying to click on submit, so this definitely is a good option.
+
+## Disabling the submit button when Form submission is in progress
+
+First scenario was disabling the submit button based on the form state being valid or invalid.
+
+The second scenario is disabling the submit button when the form is submitting in the background. For example let's say you hava a user registration form, when you fill in the details and click on submit an API call is made in the background to register the user. During this time it is really important to disable the submit button, if not the user might end up clicking the submit button twice or more number of times and this could be even more troublesome if the form is a checkout form in an e-commerce site.
+
+So the second scenario is to disable the submit button till the background operation completes.
+
+To implement this we again have to go back to the formik props. if you go through the properties we can find a property called isSubmitting. This is a boolean property which formik will set to true if a form submission has been attempted. so all we have to do is check if isSubmitting is true and if it is disable the submit button.
+
+<button type='submit' disabled={formik.isSubmitting}>Submit</button>
+
+on page load the submit button is enabled which is fine. When we click on submit there are couple of things that happen for which we need to take a look at the formik prop.
+Click on submit and you can see that we have a few logs. We're just going to inspect the first and last one. If you inspect the the first one, you can see that isSubmitting is set to true and if we inspect the last one, isSubmitting is set to false.
+
+So when you click on submit, formik will automatically set isSubmitting to true that would disable the submit button. Once the validation completes if at all there were errors, formik will automatically set isSubmitting to false and that is the reason the submit button is enabled again, it happens so quickly that we can't notice it but you can take it for granted it's working as expected.
+
+Now hang on, i mentioned that formik will set isSubmitting to false only if there are errors.But what happens if there are no errors, let's quickly try that out. So we're going to fill in the values for the first four fields and then click on submit, the data gets submitted but out submit button is still disabled. And this is an intended behavior because formik does not know when your API is going to respond back. so we have to manually set isSubmitting to false again. And the way to do that is in the onSubmit method.
+
+It turns out the onSubmit receives a second prop, let's call it onSubmitProp and then let's log it to the console.
+
+const onSubmit = (values, onSubmitProps) => {
+console.log('Form data', values)
+console.log('submit props', onSubmitProps)
+}
+
+if you save the file and go back to the browser, fill in the values and then click on submit button, inspect the submit props, we see a few methods that formik provides. Of these what we want is the setSubmitting method
+
+const onSubmit = (values, onSubmitProps) => {
+console.log('Form data', values)
+console.log('submit props', onSubmitProps)
+onSubmitProps.setSubmitting(false)
+}
+
+This will update isSubmitting to false which will in turn enables the submit button.
+
+let's give this a go, save the file head to the browser, fill in the values and click on submit. The data is submitted and the button is enabled again. Ofcourse in a real scenario you would wait for the API response and then call the setSubmitting function.
+
+<button type='submit' disabled={!formik.isValid || formik.isSubmitting}>Submit</button>
+
+So to summarize the disabling of submit button, we make use of two properties from the formik props.
+
+isValid :- which indicates the state of our form being valid or invalid
+isSubmitting:- which indicates whether the form is currently being submitted or not
+
+## Load Saved Data
+
+we're going to learn how to load saved data back into our form. If you're working on small forms like user registration or login, you probably don't have a need to load save data. However when you deal with forms that are broken into sections with several fields, you often want to allow the user to save their progress, come back at a later time and continuing filling their form. In this scenario apart from rendering the form we also need to fetch the saved data and fill those values into our form, let's understand how to do that.
+
+One point to mention though is that we are not really going to implement saving the form data or loading the form data from an API, instead we're going to mock the loading of data as if it were to come from a database through an API.
+
+First step let's define the saved data object. This has to be of the same structure as the initial values object.
+
+const savedValues = {
+name: 'Vishwas',
+email: 'v@example.com',
+channel: 'codevolution',
+comments: 'Welcome to formik',
+address: '221b Baker Street',
+social: {
+facebook: '',
+twitter: ''
+},
+phoneNumbers: ['',''],
+phNumbers: ['']
+}
+
+let's just assume this is the users progress with our YouTube form.
+
+for our second step, we're going to add a button to load this saved data
+
+<button type='button'>Load saved data</button>
+
+What we want to do is on click of this button, change formik from reading initialValues to reading savedValues.
+
+To do this let's create a state variable and update that
+
+step 3: import useState from react and declare a new state variable with an initial value of null
+
+function YoutubeForm (){
+const [formValues, setFormValues] = useState(null)
+}
+
+now on click of this load saved data button, we are going to set the form values state variable to the savedValues
+
+<button type='button' onClick={() => setFormValues(savedValues)}>Load saved data</button>
+
+step 4: we are going to change the value for the initialValues prop on the formik component
+
+function YoutubeForm (){
+const [formValues, setFormValues] = useState(null)
+
+return (
+<Formik
+initialValues={formValues || initialValues}
+validationSchema={validationSchema}
+onSubmit={onSubmit}
+
+>
+
+...
+
+  </Formik>
+)
+}
+
+And the final step is to add enableReinitialize prop on Formik component. This prop is really important because it decides whether your form can change initialValues after the form has been initialized once.
+
+function YoutubeForm (){
+const [formValues, setFormValues] = useState(null)
+
+return (
+<Formik
+initialValues={formValues || initialValues}
+validationSchema={validationSchema}
+onSubmit={onSubmit}
+enableReinitialize
+
+>
+
+...
+
+  </Formik>
+)
+}
+
+let's check in the browser. On page load you can see that we have just vishwas as the initial values for the name field, everything else is empty. This is the reflection of the initialValues object.
+Now we're going to click on the Load saved data button, if you now take a look at the fields, we have the savedValues object showing up in the form.All the five fields have different set of values.
+
+let's go with the steps one more time, first we created the savedValues object which is mocking data that would be received from an API. Then we add a button at the bottom to mimic the fetch action of an API. We created a state variable initialized to null and on click of this button we populate that state variable with the savedValues object. We then inform formik to use the saved values if it is present and if it is not present use the initialValues. Finally we tell formik to enable reinitialization using a prop.
+This is how you load saved data into a formik form.
+
+Now the scenario we have here is that of when a form has already been loaded and then the user manually loads in saved data on a button click.
+
+A possible use case is if there is a previously filled form and you want to allow the user to load that data into a new application form that would make the user experience much better.
+
+A second scenario which is much simpler scenario would be to fetch a select drop-down values from an API, in that case you definetely could show a loading indicator till your api call is done and once the API call is done update the state variable with the response and only after that is done render the formik component.
+
+## Reset Form Data
+
+We're going to learn how to reset the form data. There are two scenarios of handling form reset.
+
+First scenario is resetting the form data with a reset button and this is pretty straight forward.
+
+<button type='reset'>Reset</button>
+
+So resetting the form data is basically setting the form values to the initalValues object. Based on your requirement you can choose to add the reset button if you want to allow the user to reset their form data.
+
+The second scenario is resetting the form data after form submission has completed. Often if you are able to successfully submit your form, you see the success message and the form would have reset the values to facilitate another submission. To handle this scenario, we use the submit props in the onSubmit method.
+
+So after setting isSubmitting property to false we can clear out the form data using the method resetForm()
+
+const onSubmit = (values, onSubmitProps) => {
+console.log('Form data', values)
+console.log('submit props', onSubmitProps)
+onSubmitProps.setSubmitting(false)
+onSubmitProps.resetForm()
+}
+
+## Reusable Formik controls
+
+We had a look at the fundamentals of formik as well as a few properties and methods that could come in handy based on the form requirement but what we still need is a clear picture of how we can put it all together and write code that can be deployed to production. So now what we are going to do for the remaining second half of the series is build a set of reusable formik controls that can then be applied across a variety of forms such as registration, login and so on. We're going to break this down and take one step at a time.
+
+We're going to start off by creating a formik container component that we will use to test the other components we will be creating in the subsequent sections. This component is basically a simple formik wrapper which we will see in a bit.
+
+In the next section we are going to talk about a common formik control component that is capable of rendering the different types of form elements. once we have that out of the way we will dive into the core form elements which are input, textarea, select drop down, radio buttons, checkboxes and date picker. Once we have all these in place we will see how to put together a user registration form, a user login form and a course enrollment form. This will give you a really good idea of all the six input types along with a few validations and ofcourse form submission. Lastly we will see how to use a UI component library with our reusable formik controls.
+
+FormikContainer component
+FormikControl component
+Input
+TextArea
+Select
+RadioButtons
+Checkboxes
+DatePicker
+Registration, Login and Course Enrollment
+UI Component library
+
+/components/FormikContainer
+
+import {Formik, Form} from 'formik'
+import \* as Yup from 'yup'
+
+function FormikContainer(){
+const initialValues = {}
+const validationSchema = Yup.object({})
+const onSubmit = values => console.log('Form data', values)
+return (
+<div></div>
+)
+}
