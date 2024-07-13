@@ -1434,7 +1434,7 @@ onSubmitProps.resetForm()
 
 We had a look at the fundamentals of formik as well as a few properties and methods that could come in handy based on the form requirement but what we still need is a clear picture of how we can put it all together and write code that can be deployed to production. So now what we are going to do for the remaining second half of the series is build a set of reusable formik controls that can then be applied across a variety of forms such as registration, login and so on. We're going to break this down and take one step at a time.
 
-We're going to start off by creating a formik container component that we will use to test the other components we will be creating in the subsequent sections. This component is basically a simple formik wrapper which we will see in a bit.
+We're going to start off by creating a FormikContainer component that we will use to test the other components we will be creating in the subsequent sections. This component is basically a simple formik wrapper which we will see in a bit.
 
 In the next section we are going to talk about a common formik control component that is capable of rendering the different types of form elements. once we have that out of the way we will dive into the core form elements which are input, textarea, select drop down, radio buttons, checkboxes and date picker. Once we have all these in place we will see how to put together a user registration form, a user login form and a course enrollment form. This will give you a really good idea of all the six input types along with a few validations and ofcourse form submission. Lastly we will see how to use a UI component library with our reusable formik controls.
 
@@ -1459,6 +1459,1002 @@ const initialValues = {}
 const validationSchema = Yup.object({})
 const onSubmit = values => console.log('Form data', values)
 return (
-<div></div>
+//for the jsx we are going to return the Formik component with the render props pattern.
+
+<Formik
+initialValues={initialValues}
+validationSchema={validationSchema}
+onSubmit={onSubmit}
+
+> {
+
+      formik => (
+      <Form>
+        <submit type='submit'>Submit</submit>
+      </Form>)
+
+}
+</Formik>
 )
 }
+
+## FormikControl component
+
+In the last section we created the formik container component which we will soon use to test the different form fields.
+
+Now the functionality of this component is really simple, this component is going to decide which of the different form fields have to be rendered based on one particular prop, let's call that prop as control.
+
+/components/FormikControl.js
+
+function FormikControl(props){
+const {control} = props
+
+switch(control){
+
+}
+
+}
+
+export default FormikControl
+
+Now the way to decide which component to render is a simple switch case. we are going to look at six different form controls
+
+function FormikControl(props){
+const {control} = props
+
+switch(control){
+case 'input':
+case "textarea':
+case "select":
+case "radio":
+case "checkbox":
+case "date":
+default: return null
+
+}
+
+}
+
+Now all we have left is to create the actual components that would be returned for each of these cases
+
+## Input component
+
+We are going to build our first formik control which is the input component.
+
+since this is our first component , let's sort of break it down into individual elements which will help us better understand the props that we need to pass into the component as well.
+
+To implement this input component let's take a look at the props we will need
+
+First and foremost we set the control prop to input which is required to determine the type of formik control we need to render.
+
+control='input'
+
+second, we need a label prop which will be the label text for the form field.
+
+Third, we pass in the all-important name prop which is required by formik for the field as well as their message components
+
+finally we pass in the type attribute which is email for our example. it could also be text or password based on the form field
+
+## we are going to approach every formik control in three steps
+
+first step: we write the code in new component specific to the field type, in our case an input component
+
+second step: we write the code in FormikControl component
+
+third step: we write the code on the FormikContainer component which will also help us test the code we write in the browser.
+
+We need to create a new component for the input formikControl. so within the component folder create a new file called input.js
+
+for this input we would need a Field and ErrorMessage component form formik
+
+import React form 'react'
+
+function TextError(props){
+return (
+
+<div className='error'>
+{props.children}
+</div>
+)
+}
+
+export default TextError
+
+/components/Input.js
+
+import React from 'react'
+import {Field, ErrorMessage} form 'formik'
+import TextError from './TextError'
+
+function Input(props){
+const {label, name, ...rest} = props
+return (
+
+<div className='form-control'>
+<label htmlFor={name}>{label}</label>
+<Field id={name} name={name} {...rest} />
+<ErrorMessage name={name} component={TextError} />
+</div>
+)
+}
+
+export default Input
+
+## second step is to add code in our FormikControl component
+
+import Input from './Input'
+
+function FormikControl(props){
+const {control, ...rest} = props
+
+switch(control){
+case 'input': <Input {...rest} />
+case "textarea':
+case "select":
+case "radio":
+case "checkbox":
+case "date":
+default: return null
+
+}
+
+## for the third and final step we add code in the FormikContainer component so that we can test the code we have written in the first two steps
+
+}
+
+/components/FormikContainer
+
+first we add a property in the initialValues object
+
+import {Formik, Form} from 'formik'
+import \* as Yup from 'yup'
+import FormikControl from './FormikControl'
+
+function FormikContainer(){
+const initialValues = {
+email : ''
+}
+const validationSchema = Yup.object({
+email: Yup.string().required('Required')
+})
+const onSubmit = values => console.log('Form data', values)
+return (
+//for the jsx we are going to return the Formik component with the render props pattern.
+
+<Formik
+initialValues={initialValues}
+validationSchema={validationSchema}
+onSubmit={onSubmit}
+
+> {
+
+      formik => (
+      <Form>
+        <FormikControl
+          control='input'
+          type='email'
+          label='Email'
+          name='email'
+        />
+        <button type='submit'>Submit</button>
+      </Form>)
+
+}
+</Formik>
+)
+}
+
+## Textarea component
+
+In this section we're going to build our second formikControl which is the textarea component. We are going to be following the exzct same steps we implemented in the previous section.
+
+There are three distinct elements: a form label which is nothing but a label HTML element, a form input which is the Field component from formik which in turn should render a textarea HTML element and finally the field error which is the ErrorMessage component from formik.
+
+To implement this textarea component let's take a look at the props required
+
+props:
+
+control = 'textarea'
+
+first and foremost we set the control prop to textarea which is required to determine the type of formikControl we need to render
+
+label='Description'
+
+second, we need a label prop which will be the label text for the form field
+
+name='description'
+
+third, we pass in the all-important name prop which is required by formik for the field as well as the ErrorMessage component
+
+We're going to implement this formik control again in three simple steps:
+
+first step: we write the code in a new component specific to the field type, in our case the textarea component
+
+second step: we write the code in the FormikControl component
+
+third and final step: we write the code in the formik container component which will help us test the code we write in the browser.
+
+first step:
+
+/components/Textarea.js
+
+import {Field, ErrorMessage} from 'formik'
+import TextError from './TextError'
+
+function Textarea(props){
+const {label, name, ...rest} = props
+return (
+
+<div className='form-control'>
+<label htmlFor={name}>{label}</label>
+<Field as='textarea' id={name} name={name} {...rest} />
+<ErrorMessage name={name} component={TextError}>
+</div>
+)
+}
+
+export default Textarea
+
+second step: Add the code in our FormikControl component
+
+/components/FormikControl.js
+
+import Input from './Input'
+import Textarea from './Textarea'
+
+function FormikControl(props){
+const {control, ...rest} = props
+
+switch(control){
+case 'input':
+return <Input {...rest} />
+case "textarea': return <Textarea {...rest}/>
+case "select":
+case "radio":
+case "checkbox":
+case "date":
+default: return null
+
+}
+
+Third step: Add code in the FormikContainer component to test the code we have written in the first two steps
+
+first we add the property in initialValues object
+
+/components/FormikContainer
+
+first we add a property in the initialValues object, then add the required validation to this field
+
+import {Formik, Form} from 'formik'
+import \* as Yup from 'yup'
+import FormikControl from './FormikControl'
+
+function FormikContainer(){
+const initialValues = {
+email = '',
+description: ''
+}
+const validationSchema = Yup.object({
+email: Yup.string().required('Required')
+description: Yup.string().required('Required')
+})
+const onSubmit = values => console.log('Form data', values)
+return (
+//for the jsx we are going to return the Formik component with the render props pattern.
+
+<Formik
+initialValues={initialValues}
+validationSchema={validationSchema}
+onSubmit={onSubmit}
+
+> {
+
+      formik => (
+      <Form>
+        <FormikControl
+          control='input'
+          type='email'
+          label:'Email'
+          name='email'
+        />
+
+
+        <FormikControl
+          control='textarea'
+          label:'Description'
+          name='description'
+        />
+
+
+        <button type='submit'>Submit</button>
+      </Form>)
+
+}
+</Formik>
+)
+}
+
+## Select Dropdown Component
+
+In this section we are going to build our third FormikControl which is the Select dropdown component, we are going to be following the exact same steps we implemented in the previous videos.
+
+In the Ui a Select FormikControl would have three distinct elements: a form label which is nothing but a label HTML element, a form input which is the Field component from formik which in turn should render a select HTML element and finally the field error which is the ErrorMessage component again from formik.
+
+The field though on click of the form field renders a drop down with a list of options to choose from.
+
+To implement this select component let's take a look at the props required:
+
+props:
+
+control='select'
+
+first and foremost we set the control prop to select which is required to determine the type of formik control we need to render
+
+label='Select a topic'
+
+second we need a label prop which will be the label text for this form field
+
+name='selectOption'
+
+Third we pass in the all-important name prop which is required by formik for the field as well as the ErrorMessage component
+
+options=[{key, value}]
+
+another important prop is the options prop which is basically an array of objects. Each object will contain key value pairs which we use to populate the drop-down for our select component.
+
+We're going to implement this formik control again in three simple steps:
+
+first step: We write the code in a new component specific to the field type, in our case a select component
+
+second step: we write the code in the FormikControl component
+
+third and final step: we write the code in the formik container component which will help us test the code in the browser.
+
+let's begin with the step one, for step one we need to create a new component for the select formik control.
+
+/components/Select.js
+
+for a select dropdown is similar to what we have seen in input and textarea but this time we also have to specify the list of options as children to the field component
+
+import React form 'react'
+import {Field, ErrorMessage} from 'formik'
+import TextError from './TextError'
+
+function Select(props) {
+const {label, name, options, ...rest} = props
+return (
+
+<div className='form-control'>
+<label htmlFor={name}>{label}</label>
+<Field as='select' id={name} name={name} {...rest}>
+{options.map(option => {
+return (
+<option key={option.value} value={option.value}>
+{option.key}
+</option>
+)
+})}
+</Field>
+<ErrorMessage name={name} component={TextError} />
+</div>
+)
+}
+
+export default Select
+
+The second step is to add code in our FormikControl component
+
+/components/FormikControl.js
+
+import Input from './Input'
+import Textarea from './Textarea'
+import Select from './Select'
+
+function FormikControl(props){
+const {control, ...rest} = props
+
+switch(control){
+case 'input':
+return <Input {...rest} />
+case "textarea':
+return <Textarea {...rest}/>
+case "select":
+return <Select {...rest} />
+case "radio":
+case "checkbox":
+case "date":
+default: return null
+
+}
+
+the third and final step is we add code in the FormikContainer component to test the code we have written for the first two steps.
+
+Unlike the previous two sections our forst sub step in FormikContainer we are going to be defining a new constant called options which will contain the list of options for our drop-down
+
+/components/FormikContainer
+
+first we add a property in the initialValues object, then add the required validation to this field
+
+import {Formik, Form} from 'formik'
+import \* as Yup from 'yup'
+import FormikControl from './FormikControl'
+
+function FormikContainer(){
+
+const dropdownOptions = [
+{key:'Select an option', value: ''},
+{key: 'option 1', value: 'option1'},
+{key: 'option 2', value: 'option2'},
+{key: 'option 3', value: 'option3'}
+]
+
+const initialValues = {
+email = '',
+description: '',
+selectOption: ''
+}
+
+const validationSchema = Yup.object({
+email: Yup.string().required('Required')
+description: Yup.string().required('Required')
+selectOption: Yup.string().required('Required')
+})
+
+const onSubmit = values => console.log('Form data', values)
+return (
+//for the jsx we are going to return the Formik component with the render props pattern.
+
+<Formik
+initialValues={initialValues}
+validationSchema={validationSchema}
+onSubmit={onSubmit}
+
+> {
+
+      formik => (
+      <Form>
+        <FormikControl
+          control='input'
+          type='email'
+          label:'Email'
+          name='email'
+        />
+
+
+        <FormikControl
+          control='textarea'
+          label:'Description'
+          name='description'
+        />
+
+
+        <FormikControl
+          control='select'
+          label:'Select a topic'
+          name='selectOption'
+          options={dropdownOptions}
+        />
+
+
+        <button type='submit'>Submit</button>
+      </Form>)
+
+}
+</Formik>
+)
+}
+
+## Radio Buttons
+
+we're going to build our fourth formik control which is the radio buttons component.
+
+To implement a group of radio buttons we need to use the render props pattern for the field component. so it is not as straightforward as the previous three components but at the same time it's not difficult either.
+
+In the UI radio buttons formik control would look like this. There are three distinct elements:
+
+A form label which is nothing but a label HTML element
+
+A form input which is the Field component from formik
+
+And finally the field error which is the ErrorMessage component again from formik.
+
+The field though is actually a list of HTML input and label elements which allow you to make only one selection.
+
+This has to be considered when creating our radio buttons component.
+
+let's take a look at the props that would be required to implement this component
+
+props:
+
+control='radio'
+
+first and foremost we set the control props to radio which is required to determine the type of formik control we need to render
+
+label='Pick one option'
+
+second will be the label prop which will be the label text for form field.
+
+name='radioOption'
+
+And third we pass in the all-important name prop which is required by formik for the field as well as the error message components
+
+options=[{key,value}]
+
+Another essential prop is the options prop which is basically an array of objects. Each object will contain key-value pairs which we use to render the individual radio buttons for the component
+
+We're going to implement this formik control again in three simple steps
+
+first step we write the code in a new component specific to the field type, in our case a radio buttons component
+
+second step we write code in the FormikControl component
+
+third and final step we write the code in the FormikContainer component which will help us test the code in the browser
+
+let's begin with step one
+
+for step one we need to create a new component for the radio buttons formik control
+
+/components/RadioButtons.js
+
+import React from 'react'
+import {Field, ErrorMessage} from 'formik'
+import TextError from './TextError'
+
+function RadioButtons(props){
+const {label, name, options, ...rest} = props
+return (
+
+<div className='form-control'>
+<label>{label}</label>
+<Field name={name} {...rest}>
+{
+      ({field}) => {
+        return options.map(option => {
+          return (
+            <React.Fragment key={option.key}>
+              <input 
+                 type='radio'
+                 id={option.value}
+                 {...field}
+                 value={option.value}
+                 checked={field.value === option.value} 
+                />
+                <label htmlFor={option.value}>{option.key}</label>
+            </React.Fragment>
+          )
+        })
+        }
+      }
+      </Field>
+      <ErrorMessage name={name} component={TextError} />
+    </div>
+
+)
+}
+
+export default RadioButtons
+
+The second step is to add code in our FormikControl component
+
+/components/FormikControl.js
+
+import Input from './Input'
+import Textarea from './Textarea'
+import Select from './Select'
+import RadioButtons from './RadioButtons'
+
+function FormikControl(props){
+const {control, ...rest} = props
+
+switch(control){
+case 'input':
+return <Input {...rest} />
+case "textarea':
+return <Textarea {...rest}/>
+case "select":
+return <Select {...rest} />
+case "radio":
+return <RadioButtons {...rest} />
+case "checkbox":
+case "date":
+default: return null
+
+}
+
+For the third and final step we add code in the FormikContainer component to test the code we have written for the forst two steps
+
+we're going to start off by defining a new constant called radio options which will contain the list of options for our radio buttons
+
+/components/FormikContainer
+
+second we add a property in the initialValues object, then add the required validation to this field
+
+import {Formik, Form} from 'formik'
+import \* as Yup from 'yup'
+import FormikControl from './FormikControl'
+
+function FormikContainer(){
+
+const dropdownOptions = [
+{key:'Select an option', value: ''},
+{key: 'option 1', value: 'option1'},
+{key: 'option 2', value: 'option2'},
+{key: 'option 3', value: 'option3'}
+]
+
+const radioOptions = [
+{key: 'Option 1', value: 'rOption1'},
+{key: 'Option 2', value: 'rOption2'},
+{key: 'Option 3', value: 'rOption3'},
+]
+
+const initialValues = {
+email = '',
+description: '',
+selectOption: '',
+radioOption: ''
+}
+
+const validationSchema = Yup.object({
+email: Yup.string().required('Required')
+description: Yup.string().required('Required')
+selectOption: Yup.string().required('Required')
+radioOption: Yup.string().required('Required')
+})
+
+const onSubmit = values => console.log('Form data', values)
+return (
+//for the jsx we are going to return the Formik component with the render props pattern.
+
+<Formik
+initialValues={initialValues}
+validationSchema={validationSchema}
+onSubmit={onSubmit}
+
+> {
+
+      formik => (
+      <Form>
+        <FormikControl
+          control='input'
+          type='email'
+          label:'Email'
+          name='email'
+        />
+
+
+        <FormikControl
+          control='textarea'
+          label:'Description'
+          name='description'
+        />
+
+
+        <FormikControl
+          control='select'
+          label:'Select a topic'
+          name='selectOption'
+          options={dropdownOptions}
+        />
+
+        <FormikControl
+          control='radio'
+          label:'Radio Topic'
+          name='radioOption'
+          options={radioOptions}
+        />
+
+
+        <button type='submit'>Submit</button>
+      </Form>)
+
+}
+</Formik>
+)
+}
+
+## Checkbox Group
+
+We're going to buid our fifth formik control which is the checkbox group component. The implementation of this component is very similar to the radio buttons component we implemented in the last section.
+
+In The UI a checkbox group formik control would look like this:
+
+There are again three distinct elements:
+
+A form label which is nothing but a label HTML element.
+
+A form input which is the field component from formik and finally the field error which is the ErrorMessage component again from formik.
+
+The field though is a list of HTML input and label element which allows you to make one or more selections and this is a key difference from the radio buttons component.
+
+Radio buttons are single selection whereas checkbox group is multi selection. This has to be considered when creating our component.
+
+let's take a look at the props that would be required to implement a checkbox group:
+
+props:
+
+control='checkbox'
+
+first and foremost we set the control prop to checkbox which is required to determine the type of formik control we need to render.
+
+label='Pick options'
+
+second we need a label prop which will be the label text for the form field
+
+name='checkboxOption'
+
+third, we pass in the all-important name prop which is required by formik for the field as well as the ErrorMessage component
+
+options=[{key,value}]
+
+Another essential prop is the options prop which is basically an array of objects, each onject will contain key-value pairs which we will use to render the individual checkboxes for the component
+
+we're going to implement this formik control again in three simple steps, however the steps are going to be in the reverse order to what we have seen so far, for this section the reverse order makes more sense.
+
+so first step, we write the code in the FormikContainer component which is our starting point
+
+second step we write the code in FormikControl component
+
+third and final step we write the code in a new component specific to the field type which in our case is the checkbox group component.
+
+In the FormikContainer component we're going to create a new set of options.
+
+/components/FormikContainer
+
+second we add a property in the initialValues object, then add the required validation to this field
+
+import {Formik, Form} from 'formik'
+import \* as Yup from 'yup'
+import FormikControl from './FormikControl'
+
+function FormikContainer(){
+
+const dropdownOptions = [
+{key:'Select an option', value: ''},
+{key: 'option 1', value: 'option1'},
+{key: 'option 2', value: 'option2'},
+{key: 'option 3', value: 'option3'}
+]
+
+const radioOptions = [
+{key: 'Option 1', value: 'rOption1'},
+{key: 'Option 2', value: 'rOption2'},
+{key: 'Option 3', value: 'rOption3'},
+]
+
+const checkboxOptions = [
+{key: 'Option 1', value: 'cOption1'},
+{key: 'Option 2', value: 'cOption2'},
+{key: 'Option 3', value: 'cOption3'},
+]
+
+const initialValues = {
+email = '',
+description: '',
+selectOption: '',
+radioOption: '',
+checkboxOption: [] // this is a very important point to keep in mind. A checkbox group control let's you pick multiple values, we store the list of values in an array. Initially no value will be selected and hence the initialValue is an empty array
+}
+
+const validationSchema = Yup.object({
+email: Yup.string().required('Required')
+description: Yup.string().required('Required')
+selectOption: Yup.string().required('Required')
+radioOption: Yup.string().required('Required')
+checkboxOption: Yup.array().required('Required')
+})
+
+const onSubmit = values => console.log('Form data', values)
+return (
+//for the jsx we are going to return the Formik component with the render props pattern.
+
+<Formik
+initialValues={initialValues}
+validationSchema={validationSchema}
+onSubmit={onSubmit}
+
+> {
+
+      formik => (
+      <Form>
+        <FormikControl
+          control='input'
+          type='email'
+          label:'Email'
+          name='email'
+        />
+
+
+        <FormikControl
+          control='textarea'
+          label:'Description'
+          name='description'
+        />
+
+
+        <FormikControl
+          control='select'
+          label:'Select a topic'
+          name='selectOption'
+          options={dropdownOptions}
+        />
+
+        <FormikControl
+          control='radio'
+          label:'Radio Topic'
+          name='radioOption'
+          options={radioOptions}
+        />
+
+        <FormikControl
+          control='checkbox'
+          label:'Checkbox Topics'
+          name='checkboxOption'
+          options={checkboxOptions}
+        />
+
+
+        <button type='submit'>Submit</button>
+      </Form>)
+
+}
+</Formik>
+)
+}
+
+for the second step we add the code in FormikControl component. We dont have the checkbox group component yet but let's add the code assuming that we do.
+
+/components/FormikControl.js
+
+import Input from './Input'
+import Textarea from './Textarea'
+import Select from './Select'
+import RadioButtons from './RadioButtons'
+import CheckBoxGroup from './CheckboxGroup'
+
+function FormikControl(props){
+const {control, ...rest} = props
+
+switch(control){
+case 'input':
+return <Input {...rest} />
+case "textarea':
+return <Textarea {...rest}/>
+case "select":
+return <Select {...rest} />
+case "radio":
+return <RadioButtons {...rest} />
+case "checkbox":
+return <CheckboxGroup {...rest}/>
+case "date":
+default: return null
+
+}
+
+the final step is to create this CheckboxGroup component
+
+/components/CheckboxGroup
+
+import React from 'react'
+import {Field, ErrorMessage} from 'formik'
+import TextError from './TextError'
+
+function CheckboxGroup (props){
+const {label, name, options, ...rest} = props
+return (
+
+<div className='form-control'>
+<label>{label}</label>
+<Field name={name} {...rest}>
+{
+      ({field}) => {
+        return options.map(option => {
+          return (
+            <React.Fragment key={option.key}>
+              <input 
+                 type='checkbox'
+                 id={option.value}
+                 {...field}
+                 value={option.value}
+                 checked={field.value.includes(option.value)}
+
+                 //we now basically check if the value for the checkbox is present in the array of values for this entire field, if it is present checked is set to true
+                />
+                <label htmlFor={option.value}>{option.key}</label>
+            </React.Fragment>
+          )
+        })
+        }
+      }
+      </Field>
+      <ErrorMessage name={name} component={TextError} />
+    </div>
+
+)
+}
+
+export default CheckboxGroup
+
+## Date Picker
+
+we're going to build our sixth and final formik control which is the date picker component.
+
+The implementation of this component is similar to the radio buttons and checkbox component in the sense that we will again be using the render props pattern for the field component. However we will use a new method that formik provides to set a fields value and since we have already seen in detail how that works, in this section we're going to focus more on how to use a date picker library with formik
+
+the package which we'll be using is called react-datepicker
+
+we have a DatePicker component and we have two props: selected which indicates the selected date and the onChange prop
+
+the onChange handler receives the updated date which is then packed back into the selected prop through a state variable
+
+Make sure you keep these two props in mind because our datepicker component is pretty much this with some formik code
+
+we're going to implement this formik control again in three simple steps:
+
+first step: we write the code in a new component specific to the field type, in our case a date picker component
+
+second step: we write the code in the FormikControl component
+
+third and final step : we write the code in the formContainer component which will help us test the code in the browser
+
+so let's begin with step one
+
+for step one we need to create a new component for the date picker formikControl
+
+/components/DatePicker.js
+
+npm i react-datepicker
+
+once the installation completes we need to import the component and the CSS
+
+we've called the default export from the library as DateView since we're already calling the component as DatePicker
+
+import React from 'react'
+import DateView from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
+import {Field, ErrorMessage} from 'formik'
+import TextError from './TextError'
+
+function DatePicker(props){
+
+const {label, name, ...rest} = props
+
+return (
+
+<div className='form-control'>
+  <label htmlFor={name}>{label}</label>
+  <Field name={name}>
+  {
+    ({form, field}) => {
+      const {setFieldValue} = form
+      const {value} = field
+
+      return(
+        <DateView
+          id={name}
+          {...field}
+          {...rest}
+          selected={value}
+          onChange={val => setFieldValue(name, val)}
+        />
+      )
+    }
+
+}
+</Field>
+
+<ErrorMessage name={name} components={TextError} />
+
+</div>
+)
+}
+
+In the previous two sections, we used to only destructure the field property from the render props, for this component though we also need to destructure form in addition to field.
+
+From the form prop we are further going to destructure a method called setFieldValue. This is the new method we are seeing for the first time in the series.
+
+What this method does is it allows you to programmatically set a field's value in the formik state
+
+After this, from the field prop we are going to destrucure the value property. This basically gives the value of the date picker at any given time
+
+Now the render props pattern needs to return the JSX which is the DateView component from the library
